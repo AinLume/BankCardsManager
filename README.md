@@ -27,6 +27,8 @@ openssl rsa -in privateKey.pem -pubout -outform PEM -out publicKey.pem
 
 ## Запуск проекта
 
+В docker среде проект запускается сразу, тесты пропускаются
+
 ```shell
 docker-compose up -d
 ```
