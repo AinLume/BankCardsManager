@@ -24,3 +24,9 @@ openssl genrsa -out privateKey.pem 2048
 ```shell
 openssl rsa -in privateKey.pem -pubout -outform PEM -out publicKey.pem
 ```
+
+## Запуск проекта
+
+```shell
+docker-compose up -d
+```
