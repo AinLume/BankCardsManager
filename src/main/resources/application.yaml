@@ -1,0 +1,19 @@
+
+spring:
+  application:
+    name: bankcards
+  datasource:
+    url: jdbc:postgresql://localhost:5432/app_db
+    username: postgres
+    password: qwe123
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/migration/db.changelog-master.xml
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          public-key-location: classpath:publicKey.pem
+
+application:
+  private-key-path: classpath:privateKey.pem

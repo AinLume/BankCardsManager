@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.25.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1752599405040-1" author="AinLume">
+        <createTable tableName="cards">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_cards"/>
+            </column>
+            <column name="card_number" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expiry_date" type="timestamp"/>
+            <column name="status" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="balance" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="owner_id" type="BIGINT"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="1752599405040-2" author="AinLume">
+        <createTable tableName="users">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_users"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="1752599405040-3" author="AinLume">
+        <addUniqueConstraint columnNames="card_number" constraintName="uc_cards_cardnumber" tableName="cards"/>
+    </changeSet>
+    <changeSet id="1752599405040-4" author="AinLume">
+        <addUniqueConstraint columnNames="email" constraintName="uc_users_email" tableName="users"/>
+    </changeSet>
+    <changeSet id="1752599405040-5" author="AinLume">
+        <addForeignKeyConstraint baseColumnNames="owner_id" baseTableName="cards" constraintName="FK_CARDS_ON_OWNER"
+                                 referencedColumnNames="id" referencedTableName="users"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.25.xsd">
+
+    <changeSet id="create-block-requests" author="AinLume">
+        <createTable tableName="card_block_requests">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_block_requests"/>
+            </column>
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="card_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="processed_at" type="timestamp"/>
+            <column name="processed_by" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="card_block_requests"
+                baseColumnNames="user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                constraintName="fk_block_request_user"/>
+
+        <addForeignKeyConstraint
+                baseTableName="card_block_requests"
+                baseColumnNames="card_id"
+                referencedTableName="cards"
+                referencedColumnNames="id"
+                constraintName="fk_block_request_card"/>
+
+        <addForeignKeyConstraint
+                baseTableName="card_block_requests"
+                baseColumnNames="processed_by"
+                referencedTableName="users"
+                referencedColumnNames="id"
+                constraintName="fk_block_request_processed_by"/>
+
+        <createIndex tableName="card_block_requests" indexName="idx_block_requests_card">
+            <column name="card_id"/>
+        </createIndex>
+
+        <createIndex tableName="card_block_requests" indexName="idx_block_requests_user">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

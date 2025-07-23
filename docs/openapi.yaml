@@ -1,0 +1,755 @@
+openapi: 3.0.0
+
+info:
+  title: Card Management Service API
+  description: API для управления банковскими картами и переводами между ними
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api
+    description: Dev server
+
+paths:
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Аутентификация пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "user@example.com"
+                password:
+                  type: string
+                  example: "password123"
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '401':
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Получить всех пользователей (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Доступ запрещен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Users]
+      summary: Создать нового пользователя (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Неверные данные
+        '403':
+          description: Доступ запрещен
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Получить пользователя по ID (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: Пользователь не найден
+        '403':
+          description: Доступ запрещен
+
+    put:
+      tags: [Users]
+      summary: Обновить данные пользователя (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Данные обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Неверные данные
+        '403':
+          description: Доступ запрещен
+
+    delete:
+      tags: [Users]
+      summary: Удалить пользователя (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Пользователь удален
+        '403':
+          description: Доступ запрещен
+        '404':
+          description: Пользователь не найден
+
+  /cards:
+    get:
+      tags: [Cards]
+      summary: Получить список всех карт (ADMIN)/ Получуть список всех своих карт (USER)
+      security:
+        - bearerAuth: [ USER, ADMIN ]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, BLOCKED, EXPIRED]
+        - in: query
+          name: minBalance
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: maxBalance
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: fromDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: toDate
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Список карт
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CardResponse'
+        '401':
+          description: Не авторизован
+
+    post:
+      tags: [Cards]
+      summary: Создать новую карту (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardCreateRequest'
+      responses:
+        '201':
+          description: Карта создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '400':
+          description: Неверные данные
+        '403':
+          description: Доступ запрещен
+
+  /cards/{id}:
+    get:
+      tags: [Cards]
+      summary: Получить карту по ID (ADMIN)
+      security:
+        - bearerAuth: [ ADMIN ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Данные карты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '403':
+          description: Нет доступа к карте
+        '404':
+          description: Карта не найдена
+
+    put:
+      tags: [Cards]
+      summary: Обновить данные карты (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardUpdateRequest'
+      responses:
+        '200':
+          description: Данные карты обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '403':
+          description: Доступ запрещен
+        '404':
+          description: Карта не найдена
+
+    delete:
+      tags: [Cards]
+      summary: Удалить карту (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Карта удалена
+        '403':
+          description: Доступ запрещен
+        '404':
+          description: Карта не найдена
+
+  /cards/{id}/balance:
+    get:
+      tags: [ Cards ]
+      summary: Получить баланс карты по Id (USER)
+      security:
+        - bearerAuth: [ USER ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Баланс карты
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+        '403':
+          description: Нет доступа к карте
+        '404':
+          description: Карта не найдена
+
+  /transactions:
+    post:
+      tags: [Transactions]
+      summary: Создать перевод между картами (USER)
+      security:
+        - bearerAuth: [USER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '200':
+          description: Транзакция создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Недостаточно средств/неверные данные
+        '403':
+          description: Нет доступа к картам
+
+  /card-block-requests:
+    get:
+      tags: [Card Block Requests]
+      summary: Получить список запросов (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ PENDING, APPROVED, REJECTED ]
+        - in: query
+          name: createdAfter
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: createdBefore
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Список запросов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CardBlockRequestResponse'
+        '403':
+          description: Доступ запрещен
+
+    post:
+      tags: [Card Block Requests]
+      summary: Создать запрос на блокировку карты (USER)
+      security:
+        - bearerAuth: [USER]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardBlockRequestCreate'
+      responses:
+        '201':
+          description: Запрос создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardBlockRequestResponse'
+        '403':
+          description: Нет доступа к карте
+
+  /card-block-requests/{id}/answer:
+    put:
+      tags: [Card Block Requests]
+      summary: Ответить на запрос о блокировке (ADMIN)
+      security:
+        - bearerAuth: [ADMIN]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardBlockRequestAnswer'
+      responses:
+        '200':
+          description: Запрос одобрен
+        '403':
+          description: Доступ запрещен
+        '404':
+          description: Запрос не найден
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CardStatus:
+      type: string
+      enum: [ ACTIVE, BLOCKED, EXPIRED ]
+      description: 'Статус карты'
+    TransactionStatus:
+      type: string
+      enum: [ PENDING, COMPLETED, FAILED, CANCELLED ]
+      description: 'Статус транзакции'
+    UserRole:
+      type: string
+      enum: [ USER, ADMIN ]
+      description: 'Роль пользователя'
+    UserStatus:
+      type: string
+      enum: [ ACTIVE, BLOCKED, INACTIVE ]
+      description: 'Статус пользователя'
+    CardBlockRequestStatus:
+      type: string
+      enum: [ PENDING, APPROVED, REJECTED ]
+      description: 'Статус запроса на блокировку карты'
+
+
+    CardResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 'Id карты'
+          example: '1'
+        number:
+          type: string
+          example: "**** **** **** 1234"
+          description: 'Замаскированый номер карты'
+        ownerId:
+          type: integer
+          format: int64
+          example: 485690
+          description: 'Id владельца карты'
+        ownerName:
+          type: string
+          description: 'Имя владельца'
+          example: 'Иван'
+        expiryDate:
+          type: string
+          format: date
+          description: 'Дата окончания срока действия карты'
+          example: '03/33'
+        status:
+          $ref: '#/components/schemas/CardStatus'
+        balance:
+          type: integer
+          format: int64
+          description: 'Баланс карты в наименьших еденицах (копейки)'
+          example: '100000'
+
+    CardUpdateRequest:
+      type: object
+      required: [ expiryDate, status ]
+      properties:
+        expiryDate:
+          type: string
+          format: date
+          description: 'Дата окончаия срока карты'
+          example: '03/33'
+        status:
+          $ref: '#/components/schemas/CardStatus'
+
+    CardCreateRequest:
+      type: object
+      required: [ number, expiryDate ]
+      properties:
+        ownerId:
+          type: integer
+          format: int64
+          example: '290340'
+          description: 'Id пользователя которому принадлежит карта'
+        number:
+          type: string
+          example: '1234 1234 1234 1234'
+          description: 'Номер карты'
+        expiryDate:
+          type: string
+          format: date
+          description: 'Дата окончаия срока карты'
+          example: '03/33'
+
+    TransactionRequest:
+      type: object
+      required: [fromCardId, toCardId, amount]
+      properties:
+        fromCardId:
+          type: integer
+          format: int64
+          description: 'Id карты с которой отправляют'
+          example: '1'
+        toCardId:
+          type: integer
+          format: int64
+          description: 'Id карты которая принимает'
+          example: '2'
+        amount:
+          type: integer
+          format: int64
+          description: 'Сумма перевода в копейках'
+          example: '100000'
+
+    TransactionResponse:
+      type: object
+      properties:
+        fromCardNumber:
+          type: string
+          example: "**** **** **** 1234"
+          description: 'Номер карты с которой отправляют'
+        toCardNumber:
+          type: string
+          example: "**** **** **** 1234"
+          description: 'Номер карты которая принимает'
+        amount:
+          type: integer
+          format: int64
+          description: 'Сумма перевода в копейках'
+          example: '100000'
+        status:
+          $ref: '#/components/schemas/TransactionStatus'
+
+    UserCreateRequest:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:
+          type: string
+          example: 'Иван'
+          description: 'Имя пользователя'
+        email:
+          type: string
+          example: 'user@example.com'
+          description: 'Почта пользователя'
+        password:
+          type: string
+          example: 'qwerty123'
+          description: 'Пароль пользователя'
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    UserUpdateRequest:
+      type: object
+      required: [ email, password, status ]
+      properties:
+        email:
+          type: string
+          example: 'user@example.com'
+          description: 'Почта пользователя'
+        password:
+          type: string
+          example: 'qwerty123'
+          description: 'Пароль пользователя'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 'Id пользователя'
+          example: '1'
+        name:
+          type: string
+          example: 'User'
+          description: 'Имя пользователя'
+        email:
+          type: string
+          example: 'user@example.com'
+          description: 'Почта пользователя'
+
+    CardBlockRequestCreate:
+      type: object
+      required: [ownerId, cardId]
+      properties:
+        ownerId:
+          type: integer
+          format: int64
+          description: 'Id пользователя'
+          example: '1'
+        cardId:
+          type: integer
+          format: int64
+          description: 'Id карты которую пользователь хочет заблокировать'
+          example: '45'
+
+    CardBlockRequestResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 'Id запроса на блокировку'
+          example: '3456587'
+        ownerId:
+          type: integer
+          format: int64
+          description: 'Id владельца карты, который создал запрос на блокировку'
+          example: '3456587'
+        number:
+          type: string
+          example: "**** **** **** 1234"
+          description: 'Номер карты которую хотят заблокировать'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Дата и время создания запроса'
+          example: '2000-01-01 00:00'
+
+    CardBlockRequestAnswer:
+      type: object
+      required: [ answer ]
+      properties:
+        answer:
+          $ref: '#/components/schemas/CardBlockRequestStatus'
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 'Код ошибки ответа'
+          example: '404'
+        message:
+          type: string
+          example: "User not found"
+          description: 'Сообщение ошибки'
+
+    CardFilter:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/CardStatus'
+        fromDate:
+          type: string
+          format: date
+          description: 'Дата окончания срока действия карты - больше чем'
+          example: '03/33'
+        toDate:
+          type: string
+          format: date
+          description: 'Дата окончания срока действия карты - меньше чем'
+          example: '03/33'
+        minBalance:
+          type: integer
+          format: int64
+          description: 'Баланс карты - больше чем'
+          example: '100000'
+        maxBalance:
+          type: integer
+          format: int64
+          description: 'Баланс карты - меньше чем'
+          example: '9000000'
+
+    CardBlockRequestFilter:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/CardBlockRequestStatus'
+        createdAfter:
+          type: string
+          format: date-time
+          description: 'Дата и время запроса на блокировку - позже чем'
+          example: '2000-01-01 00:00'
+        createdBefore:
+          type: string
+          format: date
+          description: 'Дата и время запроса на блокировку - раньше чем'
+          example: '2000-01-01 00:00'
